@@ -13,7 +13,7 @@ import (
 
 func getGroups(context context.Context) ([]*gocloak.Group, error) {
 	config := client.GetConfigFromContext(context)
-	groups, err := client.NewKeyCloakClient(config).GetGroups(context)
+	groups, err := client.NewKeyCloakClient(config, context).GetGroups()
 	if err != nil {
 		return nil, err
 	}

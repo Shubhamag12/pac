@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -24,7 +23,7 @@ func TestGetUsers(t *testing.T) {
 		{
 			name: "fetched all users",
 			mockFunc: func() {
-				mockKCClient.EXPECT().GetUsers(gomock.Any()).Return(getResource("get-all-users", nil), nil).Times(1)
+				mockKCClient.EXPECT().GetUsers().Return(getResource("get-all-users", nil), nil).Times(1)
 			},
 			httpStatus: http.StatusOK,
 		},
@@ -60,7 +59,7 @@ func TestGetUser(t *testing.T) {
 		{
 			name: "fetched user successfully",
 			mockFunc: func() {
-				mockKCClient.EXPECT().GetUsers(gomock.Any()).Return(getResource("get-all-users", nil), nil).Times(1)
+				mockKCClient.EXPECT().GetUsers().Return(getResource("get-all-users", nil), nil).Times(1)
 			},
 			httpStatus:    http.StatusOK,
 			requestParams: gin.Param{Key: "id", Value: "12345"},
@@ -68,7 +67,7 @@ func TestGetUser(t *testing.T) {
 		{
 			name: "user not found",
 			mockFunc: func() {
-				mockKCClient.EXPECT().GetUsers(gomock.Any()).Return(getResource("get-all-users", nil), nil).Times(1)
+				mockKCClient.EXPECT().GetUsers().Return(getResource("get-all-users", nil), nil).Times(1)
 			},
 			httpStatus:    http.StatusNotFound,
 			requestParams: gin.Param{Key: "id", Value: "1235"},

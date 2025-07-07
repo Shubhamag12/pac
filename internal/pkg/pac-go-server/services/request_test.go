@@ -175,7 +175,7 @@ func TestNewGroupRequest(t *testing.T) {
 		{
 			name: "group request created successfully",
 			mockFunc: func() {
-				mockKCClient.EXPECT().GetGroups(gomock.Any()).Return(getResource("get-group-info", nil).([]*gocloak.Group), nil).AnyTimes()
+				mockKCClient.EXPECT().GetGroups().Return(getResource("get-group-info", nil).([]*gocloak.Group), nil).AnyTimes()
 				mockDBClient.EXPECT().GetRequestByGroupIDAndUserID(gomock.Any(), gomock.Any()).Return(getResource("get-requests-by-user-id", nil).([]models.Request), nil).AnyTimes()
 				mockDBClient.EXPECT().NewRequest(gomock.Any()).Return("123", nil).Times(1)
 				mockDBClient.EXPECT().NewEvent(gomock.Any()).Times(1)

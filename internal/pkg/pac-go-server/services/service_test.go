@@ -93,6 +93,16 @@ func TestGetService(t *testing.T) {
 			requestParams: gin.Param{Key: "name", Value: "test-service"},
 			httpStatus:    http.StatusBadRequest,
 		},
+		{
+			name: "user is not admin or owner of the service",
+			mockFunc: func() {
+				mockClient.EXPECT().GetService(gomock.Any()).Return(getResource("get-service", nil).(pac.Service), nil).Times(1)
+				mockKCClient.EXPECT().GetUserID().Return("1231245").Times(1)
+				mockKCClient.EXPECT().IsRole(gomock.Any()).Return(false).Times(1)
+			},
+			requestParams: gin.Param{Key: "name", Value: "test-service"},
+			httpStatus:    http.StatusBadRequest,
+		},
 	}
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -213,6 +223,12 @@ func TestDeleteService(t *testing.T) {
 			},
 			requestParams: gin.Param{Key: "name", Value: "test-service"},
 			httpStatus:    http.StatusNoContent,
+		},
+		{
+			name:          "service name not set",
+			mockFunc:      func() {},
+			requestParams: gin.Param{Key: "name", Value: ""},
+			httpStatus:    http.StatusBadRequest,
 		},
 	}
 	for _, tc := range testcases {

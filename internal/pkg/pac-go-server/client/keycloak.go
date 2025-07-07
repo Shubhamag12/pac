@@ -23,12 +23,14 @@ type KeyCloakConfig struct {
 
 // KeycloackClient implements KeyCloackInterface
 type KeyCloakClient struct {
+	ctx    context.Context
 	config KeyCloakConfig
 	client *gocloak.GoCloak
 }
 
-var NewKeyCloakClient = func(config KeyCloakConfig) Keycloak {
+var NewKeyCloakClient = func(config KeyCloakConfig, ctx context.Context) Keycloak {
 	return &KeyCloakClient{
+		ctx:    ctx,
 		config: config,
 		client: gocloak.NewClient(config.Hostname),
 	}
@@ -39,37 +41,37 @@ func (k *KeyCloakClient) GetClient() *gocloak.GoCloak {
 }
 
 // GetUsers for listing all the users from keycloak
-func (k *KeyCloakClient) GetUsers(ctx context.Context) ([]*gocloak.User, error) {
-	return k.client.GetUsers(ctx, k.config.AccessToken, k.config.Realm, gocloak.GetUsersParams{})
+func (k *KeyCloakClient) GetUsers() ([]*gocloak.User, error) {
+	return k.client.GetUsers(k.ctx, k.config.AccessToken, k.config.Realm, gocloak.GetUsersParams{})
 }
 
 // GetUsers for listing all the users from keycloak
-func (k *KeyCloakClient) GetUser(ctx context.Context, id string) (*gocloak.User, error) {
-	return k.client.GetUser(ctx, k.config.AccessToken, k.config.Realm, id)
+func (k *KeyCloakClient) GetUser(id string) (*gocloak.User, error) {
+	return k.client.GetUser(k.ctx, k.config.AccessToken, k.config.Realm, id)
 }
 
-func (k *KeyCloakClient) GetGroups(ctx context.Context) ([]*gocloak.Group, error) {
-	return k.client.GetGroups(ctx, k.config.AccessToken, k.config.Realm, gocloak.GetGroupsParams{})
+func (k *KeyCloakClient) GetGroups() ([]*gocloak.Group, error) {
+	return k.client.GetGroups(k.ctx, k.config.AccessToken, k.config.Realm, gocloak.GetGroupsParams{})
 }
 
-func (k *KeyCloakClient) GetUserInfo(ctx context.Context) (*gocloak.UserInfo, error) {
-	return k.client.GetUserInfo(ctx, k.config.AccessToken, k.config.Realm)
+func (k *KeyCloakClient) GetUserInfo() (*gocloak.UserInfo, error) {
+	return k.client.GetUserInfo(k.ctx, k.config.AccessToken, k.config.Realm)
 }
 
-func (k *KeyCloakClient) AddUserToGroup(ctx context.Context, userID, groupID string) error {
-	return k.client.AddUserToGroup(ctx, k.config.AccessToken, k.config.Realm, userID, groupID)
+func (k *KeyCloakClient) AddUserToGroup(userID, groupID string) error {
+	return k.client.AddUserToGroup(k.ctx, k.config.AccessToken, k.config.Realm, userID, groupID)
 }
 
-func (k *KeyCloakClient) DeleteUserFromGroup(ctx context.Context, userID, groupID string) error {
-	return k.client.DeleteUserFromGroup(ctx, k.config.AccessToken, k.config.Realm, userID, groupID)
+func (k *KeyCloakClient) DeleteUserFromGroup(userID, groupID string) error {
+	return k.client.DeleteUserFromGroup(k.ctx, k.config.AccessToken, k.config.Realm, userID, groupID)
 }
 
-func (k *KeyCloakClient) GetUserGroups(ctx context.Context, userID string) ([]*gocloak.Group, error) {
-	return k.client.GetUserGroups(ctx, k.config.AccessToken, k.config.Realm, userID, gocloak.GetGroupsParams{})
+func (k *KeyCloakClient) GetUserGroups(userID string) ([]*gocloak.Group, error) {
+	return k.client.GetUserGroups(k.ctx, k.config.AccessToken, k.config.Realm, userID, gocloak.GetGroupsParams{})
 }
 
-func (k *KeyCloakClient) DeleteUser(ctx context.Context, userID string) error {
-	return k.client.DeleteUser(ctx, k.config.AccessToken, k.config.Realm, userID)
+func (k *KeyCloakClient) DeleteUser(userID string) error {
+	return k.client.DeleteUser(k.ctx, k.config.AccessToken, k.config.Realm, userID)
 }
 
 func (k *KeyCloakClient) IsRole(name string) bool {
@@ -88,26 +90,19 @@ func (k *KeyCloakClient) GetUserID() string {
 
 // GetConfigFromContext creates config from context
 func GetConfigFromContext(ctx context.Context) KeyCloakConfig {
-	config := KeyCloakConfig{}
 
-	if hostname, ok := ctx.Value("keycloak_hostname").(string); ok {
-		config.Hostname = hostname
+	config := KeyCloakConfig{
+		Hostname:    ctx.Value("keycloak_hostname").(string),
+		AccessToken: ctx.Value("keycloak_access_token").(string),
+		Realm:       ctx.Value("keycloak_realm").(string),
 	}
 
-	if accessToken, ok := ctx.Value("keycloak_access_token").(string); ok {
-		config.AccessToken = accessToken
+	if userID := ctx.Value("userid"); userID != nil {
+		config.UserID = userID.(string)
 	}
 
-	if realm, ok := ctx.Value("keycloak_realm").(string); ok {
-		config.Realm = realm
-	}
-
-	if userID, ok := ctx.Value("userid").(string); ok {
-		config.UserID = userID
-	}
-
-	if roles, ok := ctx.Value("roles").([]string); ok {
-		config.Roles = roles
+	if roles := ctx.Value("roles"); roles != nil {
+		config.Roles = roles.([]string)
 	}
 
 	return config

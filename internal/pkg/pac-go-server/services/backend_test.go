@@ -45,7 +45,7 @@ func setUp(t testing.TB) (mockedKubeClient *kubernetes.MockClient, mockedDBClien
 	mockKeyCloakClient := client.NewMockKeycloak(ctrlKeyCloak)
 
 	newKCClient := client.NewKeyCloakClient
-	client.NewKeyCloakClient = func(config client.KeyCloakConfig) client.Keycloak {
+	client.NewKeyCloakClient = func(config client.KeyCloakConfig, ctx context.Context) client.Keycloak {
 		return mockKeyCloakClient
 	}
 
@@ -469,10 +469,6 @@ func getResource(apiType string, customValues map[string]interface{}) interface{
 		quota := models.Quota{
 			ID:      [12]byte{3},
 			GroupID: "test-group",
-			Capacity: models.Capacity{
-				CPU:    10,
-				Memory: 10,
-			},
 		}
 		// Update quota with custom values if provided
 		for key, value := range customValues {

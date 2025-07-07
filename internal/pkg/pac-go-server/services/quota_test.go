@@ -30,7 +30,7 @@ func TestGetQuota(t *testing.T) {
 		{
 			name: "quota fetched successfully",
 			mockFunc: func() {
-				mockKCClient.EXPECT().GetGroups(gomock.Any()).Return(getResource("get-group-info", nil).([]*gocloak.Group), nil).AnyTimes()
+				mockKCClient.EXPECT().GetGroups().Return(getResource("get-group-info", nil).([]*gocloak.Group), nil).AnyTimes()
 				mockDBClient.EXPECT().GetQuotaForGroupID(gomock.Any()).Return(getResource("get-quota-by-groupid", nil).(*models.Quota), nil).Times(1)
 			},
 			httpStatus:    http.StatusOK,
@@ -41,6 +41,15 @@ func TestGetQuota(t *testing.T) {
 			mockFunc:      func() {},
 			httpStatus:    http.StatusBadRequest,
 			requestParams: gin.Param{Key: "id", Value: "test-group-2"},
+		},
+		{
+			name: "quota policy does not exist for the group id",
+			mockFunc: func() {
+				mockKCClient.EXPECT().GetGroups().Return(getResource("get-group-info", nil).([]*gocloak.Group), nil).AnyTimes()
+				mockDBClient.EXPECT().GetQuotaForGroupID(gomock.Any()).Return(nil, nil).Times(1)
+			},
+			httpStatus:    http.StatusNotFound,
+			requestParams: gin.Param{Key: "id", Value: "test-group"},
 		},
 	}
 	for _, tc := range testcases {
@@ -77,13 +86,16 @@ func TestCreateQuota(t *testing.T) {
 		{
 			name: "created quota successfully",
 			mockFunc: func() {
-				mockKCClient.EXPECT().GetGroups(gomock.Any()).Return(getResource("get-group-info", nil).([]*gocloak.Group), nil).AnyTimes()
+				mockKCClient.EXPECT().GetGroups().Return(getResource("get-group-info", nil).([]*gocloak.Group), nil).AnyTimes()
 				mockDBClient.EXPECT().GetQuotaForGroupID(gomock.Any()).Return(nil, nil).Times(1)
 				mockDBClient.EXPECT().NewQuota(gomock.Any()).Return(nil).AnyTimes()
 			},
 			httpStatus:    http.StatusCreated,
 			requestParams: gin.Param{Key: "id", Value: "test-group"},
-			quota:         getResource("create-quota", nil).(*models.Quota),
+			quota: getResource("create-quota", customValues{"Capacity": models.Capacity{
+				CPU:    10,
+				Memory: 10,
+			}}).(*models.Quota),
 		},
 		{
 			name: "user not part of group",
@@ -92,7 +104,30 @@ func TestCreateQuota(t *testing.T) {
 			},
 			httpStatus:    http.StatusConflict,
 			requestParams: gin.Param{Key: "id", Value: "test-group"},
-			quota:         getResource("create-quota", nil).(*models.Quota),
+			quota: getResource("create-quota", customValues{"Capacity": models.Capacity{
+				CPU:    10,
+				Memory: 10,
+			}}).(*models.Quota),
+		},
+		{
+			name: "group not found",
+			mockFunc: func() {
+				mockKCClient.EXPECT().GetGroups().Return(getResource("get-group-info", nil).([]*gocloak.Group), nil).AnyTimes()
+			},
+			httpStatus:    http.StatusBadRequest,
+			requestParams: gin.Param{Key: "id", Value: "test-group-2"},
+		},
+		{
+			name: "quota validation has failed",
+			mockFunc: func() {
+				mockKCClient.EXPECT().GetGroups().Return(getResource("get-group-info", nil).([]*gocloak.Group), nil).AnyTimes()
+			},
+			httpStatus:    http.StatusBadRequest,
+			requestParams: gin.Param{Key: "id", Value: "test-group"},
+			quota: getResource("create-quota", customValues{"Capacity": models.Capacity{
+				CPU:    1,
+				Memory: 1,
+			}}).(*models.Quota),
 		},
 	}
 	for _, tc := range testcases {
@@ -130,13 +165,16 @@ func TestUpdateQuota(t *testing.T) {
 		{
 			name: "updated quota successfully",
 			mockFunc: func() {
-				mockKCClient.EXPECT().GetGroups(gomock.Any()).Return(getResource("get-group-info", nil).([]*gocloak.Group), nil).AnyTimes()
+				mockKCClient.EXPECT().GetGroups().Return(getResource("get-group-info", nil).([]*gocloak.Group), nil).AnyTimes()
 				mockDBClient.EXPECT().GetQuotaForGroupID(gomock.Any()).Return(getResource("create-quota", nil).(*models.Quota), nil).Times(1)
 				mockDBClient.EXPECT().UpdateQuota(gomock.Any()).Return(nil).AnyTimes()
 			},
 			httpStatus:    http.StatusCreated,
 			requestParams: gin.Param{Key: "id", Value: "test-group"},
-			quota:         getResource("create-quota", nil).(*models.Quota),
+			quota: getResource("create-quota", customValues{"Capacity": models.Capacity{
+				CPU:    10,
+				Memory: 10,
+			}}).(*models.Quota),
 		},
 		{
 			name: "no quota policy exists for the groupid",
@@ -145,7 +183,30 @@ func TestUpdateQuota(t *testing.T) {
 			},
 			httpStatus:    http.StatusConflict,
 			requestParams: gin.Param{Key: "id", Value: "test-group"},
-			quota:         getResource("create-quota", nil).(*models.Quota),
+			quota: getResource("create-quota", customValues{"Capacity": models.Capacity{
+				CPU:    10,
+				Memory: 10,
+			}}).(*models.Quota),
+		},
+		{
+			name: "group not found",
+			mockFunc: func() {
+				mockKCClient.EXPECT().GetGroups().Return(getResource("get-group-info", nil).([]*gocloak.Group), nil).AnyTimes()
+			},
+			httpStatus:    http.StatusBadRequest,
+			requestParams: gin.Param{Key: "id", Value: "test-group-2"},
+		},
+		{
+			name: "quota validation has failed",
+			mockFunc: func() {
+				mockKCClient.EXPECT().GetGroups().Return(getResource("get-group-info", nil).([]*gocloak.Group), nil).AnyTimes()
+			},
+			httpStatus:    http.StatusBadRequest,
+			requestParams: gin.Param{Key: "id", Value: "test-group"},
+			quota: getResource("create-quota", customValues{"Capacity": models.Capacity{
+				CPU:    1,
+				Memory: 1,
+			}}).(*models.Quota),
 		},
 	}
 	for _, tc := range testcases {
@@ -182,7 +243,7 @@ func TestDeleteQuota(t *testing.T) {
 		{
 			name: "quota deleted successfully",
 			mockFunc: func() {
-				mockKCClient.EXPECT().GetGroups(gomock.Any()).Return(getResource("get-group-info", nil).([]*gocloak.Group), nil).AnyTimes()
+				mockKCClient.EXPECT().GetGroups().Return(getResource("get-group-info", nil).([]*gocloak.Group), nil).AnyTimes()
 				mockDBClient.EXPECT().DeleteQuota(gomock.Any()).Return(nil).AnyTimes()
 			},
 			httpStatus:    http.StatusNoContent,
@@ -191,7 +252,7 @@ func TestDeleteQuota(t *testing.T) {
 		{
 			name: "group id does not exists",
 			mockFunc: func() {
-				mockKCClient.EXPECT().GetGroups(gomock.Any()).Return(getResource("get-group-info", nil).([]*gocloak.Group), nil).AnyTimes()
+				mockKCClient.EXPECT().GetGroups().Return(getResource("get-group-info", nil).([]*gocloak.Group), nil).AnyTimes()
 			},
 			httpStatus:    http.StatusBadRequest,
 			requestParams: gin.Param{Key: "id", Value: "test-group-1"},
@@ -231,7 +292,7 @@ func TestGetUserQuota(t *testing.T) {
 		{
 			name: "user quota fetched successfully",
 			mockFunc: func() {
-				mockKCClient.EXPECT().GetGroups(gomock.Any()).Return(getResource("get-group-info", nil).([]*gocloak.Group), nil).AnyTimes()
+				mockKCClient.EXPECT().GetGroups().Return(getResource("get-group-info", nil).([]*gocloak.Group), nil).AnyTimes()
 				mockClient.EXPECT().GetServices(gomock.Any()).Return(getResource("get-all-services", nil).(pac.ServiceList), nil).AnyTimes()
 				mockClient.EXPECT().GetCatalog(gomock.Any()).Return(getResource("get-catalog", nil).(pac.Catalog), nil).Times(1)
 				mockKCClient.EXPECT().GetUserID().Return("test-user").AnyTimes()

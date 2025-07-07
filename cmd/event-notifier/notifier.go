@@ -65,7 +65,7 @@ func getEmailForEvent(event *models.Event) (string, error) {
 	ctx = context.WithValue(ctx, "keycloak_access_token", token.AccessToken)
 
 	config := client.GetConfigFromContext(ctx)
-	user, err := client.NewKeyCloakClient(config).GetUser(ctx, event.UserID)
+	user, err := client.NewKeyCloakClient(config, ctx).GetUser(event.UserID)
 	if err != nil {
 		return "", err
 	}

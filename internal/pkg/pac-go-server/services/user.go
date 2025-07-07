@@ -10,8 +10,8 @@ import (
 )
 
 func GetUsers(c *gin.Context) {
-	config := client.GetConfigFromContext(c)
-	usrs, err := client.NewKeyCloakClient(config).GetUsers(c)
+	config := client.GetConfigFromContext(c.Request.Context())
+	usrs, err := client.NewKeyCloakClient(config, c).GetUsers()
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -39,8 +39,8 @@ func GetUsers(c *gin.Context) {
 
 func GetUser(c *gin.Context) {
 	id := c.Param("id")
-	config := client.GetConfigFromContext(c)
-	usrs, err := client.NewKeyCloakClient(config).GetUsers(c)
+	config := client.GetConfigFromContext(c.Request.Context())
+	usrs, err := client.NewKeyCloakClient(config, c).GetUsers()
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
